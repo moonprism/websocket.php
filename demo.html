@@ -5,10 +5,14 @@
     <title>websocket测试</title>
     <style type="text/css">
         #show{ width: 750px;margin: 40px auto 10px; min-height: 400px;background-color: #eee;padding: 5px 10px; }
-        #show br{ margin: 4px 0; }
+        #show p{ background-color: #e4e4e4; }
         #text{ display: block; width: 740px;margin: 0 auto;padding: 5px;border: 1px solid #ccc;height: 50px; }
         .a{ text-align: center; margin: 10px 0; }
         .a a{ color: #157EAA; text-decoration: none;padding: 5px;background-color: #eee;border-radius: 5px;border: 1px solid #ccc; }
+        @media screen and (max-width: 750px){
+            #show{width: 95%}
+            #text{width: 95%}
+        }
     </style>
 </head>
 <div id="show"></div>
@@ -22,8 +26,9 @@
         console.log("Link Start");
     };
     ws.onmessage = function(e){
-        $('show').innerText += e.data;
-        $('show').innerHTML += '<br>'
+        var t_p = document.createElement('p');
+        t_p.innerText = e.data;
+        $('show').appendChild(t_p);
     };
     function send(){
         ws.send($('text').value);
