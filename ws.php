@@ -2,7 +2,7 @@
 
 /**
  **  一个简单的websocket聊天程序，
- **   >nohup php ws.php &
+ **   >screen -S 'WS' php ws.php
  */
 
 error_reporting(E_ALL);
