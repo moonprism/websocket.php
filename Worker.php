@@ -50,27 +50,61 @@ class Worker
             $this->eve->del($index);
             unset($this->users[$index]);
             @fclose($conn);
+            $this->prpr(['user unLink:'=> $index]);
             return;
         }
         if (isset($this->users[$index])) {
             // 已经握手则发送消息
-            foreach ($this->users as $u) {
-                fwrite($u['socket'], $this->encode($this->decode($buffer)));
+            //
+            // -- 消息格式定义为JSON {t:$user_id, m:$message}
+            // -- t为0的话则发送群体消息
+            //
+            $data = @json_decode($this->decode($buffer), true);
+            $m = '';
+            if (isset($data['t'])) {
+                $t = intval($data['t']);
+                if (isset($data['m'])) {
+                    $m = $data['m'];
+                }
+                $message = json_encode(['user'=>$index, 'message'=>$m]);
+                if ($t === 0) {
+                    if ($m == '*') {
+                        fwrite($this->users[$index]['socket'], $this->encode(json_encode(array_keys($this->users))));
+                    } else foreach ($this->users as $k=>$u) {
+                        fwrite($u['socket'], $this->encode($message));
+                    }
+                } else if(isset($this->users[$t])) {
+                    fwrite($this->users[$t]['socket'], $this->encode($message));
+                }
+                
             }
         } else {
             // 握手
             if ($handS = $this->handShakeData($buffer)) {
                 fwrite($conn, $this->handShakeData($buffer));
+                //
+                // -- 有用户连接过来向其发送所有用户列表与更新其他用户用户列表
+                // -- {t:0, li:[$id_list]}
+                //
                 // 添加到已建立连接用户
                 $this->users[$index] = ['socket'=>$conn];
+                $this->prpr(['user Link:'=> $index]);
             }
+        }
+    }
+
+    // 发送用户消息列表，这个效率确实差，先写个demo
+    public function prpr($message){
+        $user_list = json_encode([$message, 'online users'=>array_keys($this->users)]);
+        foreach ($this->users as $k=>$u) {
+            fwrite($u['socket'], $this->encode($user_list));
         }
     }
 
     /**
      * WebSocket握手处理
      */
-    function handShakeData($buffer) {
+    public function handShakeData($buffer) {
         preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $buffer, $keys);
         if (!isset($keys[1])) return false;
         $key = base64_encode(sha1($keys[1] . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true));
@@ -80,7 +114,7 @@ class Worker
     /**
      * 将接收消息解码
      */
-    function decode($buffer) {
+    public function decode($buffer) {
         $len = $masks = $data = $decoded = null;
         $len = ord($buffer[1]) & 127;
         if ($len === 126) {
@@ -102,7 +136,7 @@ class Worker
     /**
      * 编码需要发送的数据
      */
-    function encode($s) {
+    public function encode($s) {
         $a = str_split($s, 125);
         if (count($a) == 1) {
             return "\x81".chr(strlen($a[0])).$a[0];
