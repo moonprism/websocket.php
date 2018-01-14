@@ -1,5 +1,37 @@
 <meta charset="utf-8">
 <script>
+
+/*
+  发送服务器格式
+  {
+    c: 'login',
+    a: ['name', 'img']
+  }
+  {
+    c: 'send',
+    a: [recv_id, 'message']
+  }
+*/
+
+var users = [];
+
+/* event */
+var eve = {
+    login: function(data){
+        // 处理所有用户列表
+        data['u_li']
+    },
+    online: function(data){
+        // 处理用户上线
+    },
+    offline: function(data){
+        // 处理用户下线
+    },
+    message: function(data){
+        // 处理某用户发送消息
+    }
+}
+
 var ws = new WebSocket("ws://k:2333")
 var all = 0;
 ws.onopen = function(){

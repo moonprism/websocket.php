@@ -1,12 +1,15 @@
 <?php
 
 require 'Libevent.php';
+require 'User.php';
+require 'Route.php';
 
 class Worker
 {
     public $socket = null;
     public $eve = null;
-    public $users = [];
+    public $users = null;
+    public $links = [];
 
     /**
      * 开启监听端口
@@ -19,9 +22,12 @@ class Worker
         stream_set_blocking($this->socket, 0);
         // 获取Libevent单例
         $this->eve = Libevent::getInstance();
+        // 监听事件
         $this->eve->add($this->socket, [$this, 'accept']);
         // 开启事件轮询
         $this->eve->loop();
+        // 用户类
+        $this->users = new User();
     }
 
     /**
@@ -43,61 +49,61 @@ class Worker
     public function recv($conn, $flag)
     {
         // 用户、事件flag
-        $index = intval($conn);
+        $uid = intval($conn);
         $buffer = @fread($conn, 1024);
         if (($buffer === '' || $buffer === false) && (feof($conn) || !is_resource($conn) || $buffer === false)) {
             // 接收完成,清除轮询事件,关闭 socket 连接
-            $this->eve->del($index);
-            unset($this->users[$index]);
+            $this->eve->del($uid);
+            $this->users->del($uid);
+            unset($this->links[$uid]);
             @fclose($conn);
-            $this->prpr(['user unLink:'=> $index]);
             return;
         }
-        if (isset($this->users[$index])) {
+        if (isset($this->links[$uid])) {
             // 已经握手则发送消息
             //
-            // -- 消息格式定义为JSON {t:$user_id, m:$message}
-            // -- t为0的话则发送群体消息
+            // -- 消息格式定义为JSON {c:$controller, a:[$arg]}
+            // -- 转到Route处理
             //
             $data = @json_decode($this->decode($buffer), true);
-            $m = '';
-            if (isset($data['t'])) {
-                $t = intval($data['t']);
-                if (isset($data['m'])) {
-                    $m = $data['m'];
-                }
-                $message = json_encode(['user'=>$index, 'message'=>$m]);
-                if ($t === 0) {
-                    if ($m == '*') {
-                        fwrite($this->users[$index]['socket'], $this->encode(json_encode(array_keys($this->users))));
-                    } else foreach ($this->users as $k=>$u) {
-                        fwrite($u['socket'], $this->encode($message));
+            if (isset($data['c'])) {
+                // 处理控制器
+                $rf = new ReflectionClass('Route');
+                $actionRf = $rf->getMethod($data['c']);
+                $params = $actionRf->getParameters();
+                $i = 0;
+                $pas = [];
+                // 注入依赖User uid
+                foreach ($params as $pa) {
+                    if ($class = $pa->getClass()) {
+                        switch ($class->getName()) {
+                            case 'User':
+                                $pas[] = $this->users;
+                                break;
+                            case 'ID':
+                                $pas[] = $uid;
+                            case 'Socket':
+                                $pas[] = $this->links[$uid];
+                                break;
+                        }
+                    } else {
+                        if (isset($data['a'][$i])) {
+                            $pas[] = $data['a'][$i];
+                        }
+                        $i++;
                     }
-                } else if(isset($this->users[$t])) {
-                    fwrite($this->users[$t]['socket'], $this->encode($message));
                 }
-                
+                $actionRf->invokeArgs($rf->newInstance(), $pas);
             }
         } else {
             // 握手
             if ($handS = $this->handShakeData($buffer)) {
                 fwrite($conn, $this->handShakeData($buffer));
                 //
-                // -- 有用户连接过来向其发送所有用户列表与更新其他用户用户列表
-                // -- {t:0, li:[$id_list]}
+                // -- 接收一个连接
                 //
-                // 添加到已建立连接用户
-                $this->users[$index] = ['socket'=>$conn];
-                $this->prpr(['user Link:'=> $index]);
+                $this->links[$uid] = $conn;
             }
-        }
-    }
-
-    // 发送用户消息列表，这个效率确实差，先写个demo
-    public function prpr($message){
-        $user_list = json_encode([$message, 'online users'=>array_keys($this->users)]);
-        foreach ($this->users as $k=>$u) {
-            fwrite($u['socket'], $this->encode($user_list));
         }
     }
 
