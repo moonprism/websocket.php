@@ -38,7 +38,7 @@ class User{
     public function get_list()
     {
         $user_list = [];
-        foreach (self::users as $key => $value) {
+        foreach (self::$users as $key => $value) {
             // $uid, $name, $img
             $user_list[] = [$key, $value['name'], $value['img']];
         }
@@ -59,7 +59,7 @@ class User{
     public function del($uid)
     {
         unset(self::$users[$uid]);
-        $u->event(0, ['e'=>'offline', 'a'=>['uid'=>$uid]]);
+        self::event(0, ['e'=>'offline', 'a'=>['uid'=>$uid]]);
     }
 
     /**

@@ -12,14 +12,14 @@
 ## 数据格式
 
 ### 客户端
-```json
+```
 {
     c:'controller',
     a:[arg1, arg2 ...]
 }
 ```
 ### 服务器
-```json
+```
 {
     e:'event',
     a:[arg1, arg2 ...]

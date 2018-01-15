@@ -4,6 +4,17 @@ require 'Libevent.php';
 require 'User.php';
 require 'Route.php';
 
+class Re{
+    public $users = null;
+    public $uid = 0;
+    public $socket = null;
+    public function __construct($users, $uid, $socket){
+        $this->users = $users;
+        $this->uid = $uid;
+        $this->socket = $socket;
+    }
+}
+
 class Worker
 {
     public $socket = null;
@@ -22,12 +33,12 @@ class Worker
         stream_set_blocking($this->socket, 0);
         // 获取Libevent单例
         $this->eve = Libevent::getInstance();
+        // 用户类
+        $this->users = new User();
         // 监听事件
         $this->eve->add($this->socket, [$this, 'accept']);
         // 开启事件轮询
         $this->eve->loop();
-        // 用户类
-        $this->users = new User();
     }
 
     /**
@@ -48,6 +59,7 @@ class Worker
      */
     public function recv($conn, $flag)
     {
+        var_dump($this->users->get_list());
         // 用户、事件flag
         $uid = intval($conn);
         $buffer = @fread($conn, 1024);
@@ -77,13 +89,8 @@ class Worker
                 foreach ($params as $pa) {
                     if ($class = $pa->getClass()) {
                         switch ($class->getName()) {
-                            case 'User':
-                                $pas[] = $this->users;
-                                break;
-                            case 'ID':
-                                $pas[] = $uid;
-                            case 'Socket':
-                                $pas[] = $this->links[$uid];
+                            case 'Re':
+                                $pas[] = new Re($this->users, $uid, $conn);
                                 break;
                         }
                     } else {

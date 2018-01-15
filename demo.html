@@ -19,31 +19,32 @@ var users = [];
 var eve = {
     login: function(data){
         // 处理所有用户列表
-        data['u_li']
+        console.log(data);
     },
     online: function(data){
         // 处理用户上线
+        console.log(data);
     },
     offline: function(data){
         // 处理用户下线
+        console.log(data);
     },
     message: function(data){
         // 处理某用户发送消息
+        console.log(data);
     }
 }
 
 var ws = new WebSocket("ws://k:2333")
 var all = 0;
 ws.onopen = function(){
-    console.log("Link Start -- list()可以列出当前用户列表 | send(id, 'message')可以向用户发送信息 | send(all, 'message')向所有用户发送消息")
+    
 };
 ws.onmessage = function(e){
-    console.log(JSON.parse(e.data))
+    var data = JSON.parse(e.data)
+    eve[data.c](data.a)
 };
 function send(id, message){
-    ws.send('{"t":"'+id+'","m":"'+message+'"}')
-}
-function list(){
-    send(0, '*')
+    ws.send('{"c":"send","a":"['+id+',"'+message+'"]"}')
 }
 </script>
