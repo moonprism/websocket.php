@@ -9,10 +9,10 @@ class Route
     {
         // 通知其他用户新增用户
         $r->users->event(0, ['e'=>'online', 'a'=>['uid'=>$r->uid, 'name'=>$name, 'img'=>$img]]);
-        // 获取所有用户列表
-        $r->users->event($r->uid, ['e'=>'login', 'a'=>['u_li'=>$r->users->get_list()]]);
         // 登录成功
         $r->users->login($r->uid, $name, $img, $r->socket);
+        // 获取所有用户列表
+        $r->users->event($r->uid, ['e'=>'login', 'a'=>['u_li'=>$r->users->get_list()]]);
     }
 
     /**

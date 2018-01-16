@@ -13,7 +13,7 @@ class User{
      */
     public function send($rid, $sid, $data)
     {
-        $send_message = json_encode(['e'=>'message', 'a'=>['uid'=>$sid, 'data'=>$data]]);
+        $send_message = $this->encode(json_encode(['e'=>'message', 'a'=>['uid'=>$sid, 'data'=>$data]]));
         if ($rid !== 0) @fwrite(self::$users[$rid]['socket'], $send_message);
         else foreach (self::$users as $key => $value) {
             @fwrite(self::$users[$key]['socket'], $send_message);
@@ -25,7 +25,7 @@ class User{
      */
     public function event($eid, $data)
     {
-        $send_message = json_encode($data);
+        $send_message = $this->encode(json_encode($data));
         if ($eid !== 0) @fwrite(self::$users[$eid]['socket'], $send_message);
         else foreach (self::$users as $key => $value) {
             @fwrite(self::$users[$key]['socket'], $send_message);
@@ -68,6 +68,21 @@ class User{
     public function has($uid)
     {
         return isset(self::$users[$uid]);
+    }
+
+    /**
+     * 编码需要发送的数据
+     */
+    public function encode($s) {
+        $a = str_split($s, 125);
+        if (count($a) == 1) {
+            return "\x81".chr(strlen($a[0])).$a[0];
+        }
+        $ns = "";
+        foreach ($a as $o) {
+            $ns .= "\x81".chr(strlen($o)).$o;
+        }
+        return $ns;
     }
 
 }

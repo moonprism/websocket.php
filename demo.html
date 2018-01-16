@@ -19,18 +19,22 @@ var users = [];
 var eve = {
     login: function(data){
         // 处理所有用户列表
+        // {uli:[[id, name, img] ... ]}
         console.log(data);
     },
     online: function(data){
         // 处理用户上线
+        // {"uid":11,"name":"nya","img":"def"}
         console.log(data);
     },
     offline: function(data){
         // 处理用户下线
+        // {"uid":11}
         console.log(data);
     },
     message: function(data){
         // 处理某用户发送消息
+        // {uid: 11, data:'...'}
         console.log(data);
     }
 }
@@ -41,8 +45,9 @@ ws.onopen = function(){
     
 };
 ws.onmessage = function(e){
+    console.log(e.data);
     var data = JSON.parse(e.data)
-    eve[data.c](data.a)
+    eve[data.e](data.a)
 };
 function send(id, message){
     ws.send('{"c":"send","a":"['+id+',"'+message+'"]"}')

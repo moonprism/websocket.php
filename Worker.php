@@ -59,7 +59,6 @@ class Worker
      */
     public function recv($conn, $flag)
     {
-        var_dump($this->users->get_list());
         // 用户、事件flag
         $uid = intval($conn);
         $buffer = @fread($conn, 1024);
@@ -76,6 +75,7 @@ class Worker
             //
             // -- 消息格式定义为JSON {c:$controller, a:[$arg]}
             // -- 转到Route处理
+            // -- 这里还需要对发送来的路由信息通过反射过滤
             //
             $data = @json_decode($this->decode($buffer), true);
             if (isset($data['c'])) {
@@ -144,21 +144,6 @@ class Worker
             $decoded .= $data[$index] ^ $masks[$index % 4];
         }
         return $decoded;
-    }
-
-    /**
-     * 编码需要发送的数据
-     */
-    public function encode($s) {
-        $a = str_split($s, 125);
-        if (count($a) == 1) {
-            return "\x81".chr(strlen($a[0])).$a[0];
-        }
-        $ns = "";
-        foreach ($a as $o) {
-            $ns .= "\x81".chr(strlen($o)).$o;
-        }
-        return $ns;
     }
 
 }
