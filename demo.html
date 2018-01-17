@@ -19,7 +19,7 @@ var users = [];
 var eve = {
     login: function(data){
         // 处理所有用户列表
-        // {uli:[[id, name, img] ... ]}
+        // {uid:uid, uli:[[id, name, img] ... ]}
         console.log(data);
     },
     online: function(data){
@@ -49,6 +49,9 @@ ws.onmessage = function(e){
     var data = JSON.parse(e.data)
     eve[data.e](data.a)
 };
+function login(name, img){
+    ws.send('{"c":"login","a":["'+name+'","'+img+'"]}')
+}
 function send(id, message){
     ws.send('{"c":"send","a":"['+id+',"'+message+'"]"}')
 }

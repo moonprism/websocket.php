@@ -4,6 +4,7 @@ require 'Libevent.php';
 require 'User.php';
 require 'Route.php';
 
+// 用于注入的请求信息类
 class Re{
     public $users = null;
     public $uid = 0;
@@ -65,7 +66,8 @@ class Worker
         if (($buffer === '' || $buffer === false) && (feof($conn) || !is_resource($conn) || $buffer === false)) {
             // 接收完成,清除轮询事件,关闭 socket 连接
             $this->eve->del($uid);
-            $this->users->del($uid);
+            // 用户关闭连接事件
+            if ($this->users->has($uid)) $this->users->del($uid);
             unset($this->links[$uid]);
             @fclose($conn);
             return;
@@ -81,26 +83,33 @@ class Worker
             if (isset($data['c'])) {
                 // 处理控制器
                 $rf = new ReflectionClass('Route');
-                $actionRf = $rf->getMethod($data['c']);
-                $params = $actionRf->getParameters();
-                $i = 0;
-                $pas = [];
-                // 注入依赖User uid
-                foreach ($params as $pa) {
-                    if ($class = $pa->getClass()) {
-                        switch ($class->getName()) {
-                            case 'Re':
-                                $pas[] = new Re($this->users, $uid, $conn);
-                                break;
+                // 判断是否有这个函数
+                if ($rf->hasMethod($data['c'])) {
+                    $actionRf = $rf->getMethod($data['c']);
+                    $params = $actionRf->getParameters();
+                    $i = 0;
+                    $pas = [];
+                    // 注入依赖Re $re
+                    foreach ($params as $pa) {
+                        if ($class = $pa->getClass()) {
+                            switch ($class->getName()) {
+                                case 'Re':
+                                    $pas[] = new Re($this->users, $uid, $conn);
+                                    break;
+                            }
+                        } else {
+                            if (isset($data['a'][$i])) {
+                                $pas[] = $data['a'][$i];
+                            }
+                            $i++;
                         }
-                    } else {
-                        if (isset($data['a'][$i])) {
-                            $pas[] = $data['a'][$i];
-                        }
-                        $i++;
                     }
+                    // 检测参数个数
+                    //if (count($pas) >= $actionRf->getNumberOfRequiredParameters() && count($pas) <= $actionRf->getNumberOfParameters()) {
+                        $actionRf->invokeArgs($rf->newInstance(), $pas);   
+                    //}
+                    
                 }
-                $actionRf->invokeArgs($rf->newInstance(), $pas);
             }
         } else {
             // 握手

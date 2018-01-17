@@ -12,7 +12,7 @@ class Route
         // 登录成功
         $r->users->login($r->uid, $name, $img, $r->socket);
         // 获取所有用户列表
-        $r->users->event($r->uid, ['e'=>'login', 'a'=>['u_li'=>$r->users->get_list()]]);
+        $r->users->event($r->uid, ['e'=>'login', 'a'=>['uid'=>$r->uid, 'u_li'=>$r->users->get_list()]]);
     }
 
     /**
