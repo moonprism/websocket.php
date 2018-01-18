@@ -1,18 +1,5 @@
 <meta charset="utf-8">
 <script>
-
-/*
-  发送服务器格式
-  {
-    c: 'login',
-    a: ['name', 'img']
-  }
-  {
-    c: 'send',
-    a: [recv_id, 'message']
-  }
-*/
-
 var users = [];
 
 /* event */
@@ -49,9 +36,11 @@ ws.onmessage = function(e){
     var data = JSON.parse(e.data)
     eve[data.e](data.a)
 };
+// 登录
 function login(name, img){
     ws.send('{"c":"login","a":["'+name+'","'+img+'"]}')
 }
+// 向某用户发送消息
 function send(id, message){
     ws.send('{"c":"send","a":"['+id+',"'+message+'"]"}')
 }

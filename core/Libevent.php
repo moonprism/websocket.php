@@ -1,5 +1,7 @@
 <?php
 
+namespace core;
+
 class Libevent
 {
     private static $instance;
